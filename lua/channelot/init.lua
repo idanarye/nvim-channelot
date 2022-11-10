@@ -1,7 +1,9 @@
 local M = {}
 
+---@class ChannelotTerminal
 local Terminal = {}
 
+---@return ChannelotTerminal
 function M.terminal()
     local obj = setmetatable({
         input_callbacks = {};
@@ -19,8 +21,10 @@ function M.terminal()
     return obj
 end
 
+---@class ChannelotJob
 local Job = {}
 
+---@return ChannelotJob
 function Terminal:job(command)
     assert(self.current_job == nil, 'terminal is already running a job')
 
