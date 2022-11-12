@@ -10,3 +10,4 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Launching jobs on the terminal object.
 - Waiting for a job to finish.
 - Prompting the user for closing the terminal.
+- Iterating output
