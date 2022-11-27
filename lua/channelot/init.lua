@@ -246,6 +246,18 @@ function Job:iter(opts)
     end
 end
 
+function Job:write(data)
+    vim.api.nvim_chan_send(self.job_id, data)
+end
+
+function Job:writeln(data)
+    if data == nil then
+        self:write('\n')
+    else
+        self:write(data .. '\n')
+    end
+end
+
 function M.terminal_job(command)
     local obj = setmetatable({
         callbacks = {
