@@ -125,8 +125,9 @@ end
 
 ---@class ChannelotJobIterConfig
 
----@param opts ChannelotJobIterConfig
+---@param opts? ChannelotJobIterConfig
 function Job:iter(opts)
+    opts = opts or {}
     local buffer = {read_from = 0, write_to = 0}
 
     local function write_to_buffer(...)
@@ -134,8 +135,7 @@ function Job:iter(opts)
         buffer.write_to = buffer.write_to + 1
     end
 
-    local function try_read_from_buffer()
-    end
+    local chan_info = vim.api.nvim_get_chan_info(self.job_id)
 
     local line_buffers = {
         stdout = {},
@@ -144,28 +144,56 @@ function Job:iter(opts)
 
     local co = coroutine.running()
 
-    local function handle_data_event_buffered(event, data)
-        local should_resume = false
-        local line_buffer = line_buffers[event]
-        for _, line in ipairs(data) do
-            if vim.endswith(line, '\r') then
-                if next(line_buffer) ~= nil then
+    local handle_data_event_buffered
+    if chan_info.pty then
+        handle_data_event_buffered = function(event, data)
+            local should_resume = false
+            local line_buffer = line_buffers[event]
+            for _, line in ipairs(data) do
+                if vim.endswith(line, '\r') then
+                    if next(line_buffer) ~= nil then
+                        table.insert(line_buffer, line)
+                        line = table.concat(line_buffer)
+                        line_buffer = {}
+                        line_buffers[event] = line_buffer
+                    end
+                    write_to_buffer(event, line)
+                    should_resume = true
+                elseif line ~= '' then
+                    table.insert(line_buffer, line)
+                end
+            end
+            if should_resume then
+                coroutine.resume(co)
+            end
+        end
+    else
+        handle_data_event_buffered = function(event, data)
+            local should_resume = false
+            local line_buffer = line_buffers[event]
+            for i, line in ipairs(data) do
+                if i == 1 and next(line_buffer) ~= nil then
                     table.insert(line_buffer, line)
                     line = table.concat(line_buffer)
                     line_buffer = {}
                     line_buffers[event] = line_buffer
+
+                    if data[i + 1] ~= nil then
+                        write_to_buffer(event, line)
+                        should_resume = true
+                    end
+                elseif data[i + 1] ~= nil then
+                    write_to_buffer(event, line)
+                    should_resume = true
+                elseif line ~= '' then
+                    table.insert(line_buffer, line)
                 end
-                write_to_buffer(event, line)
-                should_resume = true
-            elseif line ~= '' then
-                table.insert(line_buffer, line)
+            end
+            if should_resume then
+                coroutine.resume(co)
             end
         end
-        if should_resume then
-            coroutine.resume(co)
-        end
     end
-
     local function handle_data_event_unbuffered(event, data)
         local should_resume = false
         for _, line in ipairs(data) do
@@ -216,6 +244,65 @@ function Job:iter(opts)
             end
         end
     end
+end
+
+function M.terminal_job(command)
+    local obj = setmetatable({
+        callbacks = {
+            exit = {};
+            stdout = {};
+            stderr = {};
+        };
+    }, {__index = Job})
+
+    local function on_output(_, data, event)
+        for _, callback in pairs(obj.callbacks[event]) do
+            callback(event, data)
+        end
+    end
+
+    obj.job_id = vim.fn.termopen(command, {
+        stdout_buffered = false;
+        on_stdout = on_output;
+        on_stderr = on_output;
+        on_exit = function(_, exit_status)
+            obj.exit_status = exit_status
+            for _, callback in pairs(obj.callbacks.exit) do
+                callback('exit', exit_status)
+            end
+        end
+    })
+    return obj
+end
+
+function M.job(command)
+    local obj = setmetatable({
+        callbacks = {
+            exit = {};
+            stdout = {};
+            stderr = {};
+        };
+    }, {__index = Job})
+
+    local function on_output(_, data, event)
+        for _, callback in pairs(obj.callbacks[event]) do
+            callback(event, data)
+        end
+    end
+
+    obj.job_id = vim.fn.jobstart(command, {
+        pty = false;
+        stdout_buffered = false;
+        on_stdout = on_output;
+        on_stderr = on_output;
+        on_exit = function(_, exit_status)
+            obj.exit_status = exit_status
+            for _, callback in pairs(obj.callbacks.exit) do
+                callback('exit', exit_status)
+            end
+        end
+    })
+    return obj
 end
 
 return M

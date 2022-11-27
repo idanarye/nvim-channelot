@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Added
 - Terminal object.
 - Launching jobs on the terminal object.
+- Launching standalong jobs, with or without a terminal.
 - Waiting for a job to finish.
 - Prompting the user for closing the terminal.
 - Iterating output
