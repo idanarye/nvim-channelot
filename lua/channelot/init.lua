@@ -40,7 +40,7 @@ function Terminal:job(command)
     }, {__index = Job})
 
     local function on_output(_, data, event)
-        for _, callback in pairs(obj.callbacks[event]) do
+        for cbn, callback in pairs(obj.callbacks[event]) do
             callback(event, data)
         end
         for i, text in pairs(data) do
@@ -225,6 +225,7 @@ function Job:iter(opts)
         end
     end
 
+    local callbacks_key = {}
     return function()
         while self.exit_status == nil or buffer.read_from < buffer.write_to do
             if buffer.read_from < buffer.write_to then
@@ -234,7 +235,6 @@ function Job:iter(opts)
                 return unpack(from_buffer)
             end
 
-            local callbacks_key = {}
             for stream_name, stream_handler in pairs(handle_streams_with) do
                 self.callbacks[stream_name][callbacks_key] = stream_handler
             end
