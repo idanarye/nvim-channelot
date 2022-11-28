@@ -25,8 +25,26 @@ end
 ---@field exit_status? integer
 local Job = {}
 
+---@param env {[string]:any}
+---@param command string|string[]
+---@param opts? {[string]:any} not used now, will be used later
+---@return {[string]:any}
+---@return string|string[]
+local function normalize_job_arguments(env, command, opts)
+    if type(env) == 'string' or (next(env) and vim.tbl_islist(env)) then
+        return nil, env, command or {}
+    else
+        return env, command, opts or {}
+    end
+end
+
+---@param env {[string]:any}
+---@param command string|string[]
 ---@return ChannelotJob
-function Terminal:job(command)
+---@overload fun(command: string|string[]): ChannelotJob
+function Terminal:job(env, command)
+    env, command = normalize_job_arguments(env, command)
+
     assert(self.current_job == nil, 'terminal is already running a job')
 
     local terminal_id = self.terminal_id
@@ -52,6 +70,7 @@ function Terminal:job(command)
     end
 
     obj.job_id = vim.fn.jobstart(command, {
+        env = env;
         pty = true;
         stdout_buffered = false;
         on_stdout = on_output;
@@ -258,7 +277,12 @@ function Job:writeln(data)
     end
 end
 
-function M.terminal_job(command)
+---@param env {[string]:any}
+---@param command string|string[]
+---@return ChannelotJob
+---@overload fun(command: string|string[]): ChannelotJob
+function M.terminal_job(env, command)
+    env, command = normalize_job_arguments(env, command)
     local obj = setmetatable({
         callbacks = {
             exit = {};
@@ -274,6 +298,7 @@ function M.terminal_job(command)
     end
 
     obj.job_id = vim.fn.termopen(command, {
+        env = env;
         stdout_buffered = false;
         on_stdout = on_output;
         on_stderr = on_output;
@@ -287,7 +312,12 @@ function M.terminal_job(command)
     return obj
 end
 
-function M.job(command)
+---@param env {[string]:any}
+---@param command string|string[]
+---@return ChannelotJob
+---@overload fun(command: string|string[]): ChannelotJob
+function M.job(env, command)
+    env, command = normalize_job_arguments(env, command)
     local obj = setmetatable({
         callbacks = {
             exit = {};
@@ -303,6 +333,7 @@ function M.job(command)
     end
 
     obj.job_id = vim.fn.jobstart(command, {
+        env = env;
         pty = false;
         stdout_buffered = false;
         on_stdout = on_output;
