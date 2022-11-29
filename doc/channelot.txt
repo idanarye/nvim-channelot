@@ -1,0 +1,47 @@
+================================================================================
+Channelot - Terminal and Job IO for Lua Coroutines                   *channelot*
+
+Channelot is a library plugin for operating Neovim jobs from a Lua
+coroutine.
+
+Channelot was created as a supplemental plugin for Moonicipal
+(https://github.com/idanarye/nvim-moonicipal), but can be used independent
+of it.
+
+ChannelotTerminal                                            *ChannelotTerminal*
+
+
+channelot.terminal()                                        *channelot.terminal*
+
+    Returns: ~
+        (ChannelotTerminal)
+
+
+ChannelotJob                                                      *ChannelotJob*
+
+    Fields: ~
+        {exit_status?}  (integer)
+
+
+ChannelotJobIterConfig                                  *ChannelotJobIterConfig*
+
+
+channelot.terminal_job({command})                       *channelot.terminal_job*
+
+    Parameters: ~
+        {command}  (string|string[])
+
+    Returns: ~
+        (ChannelotJob)  @overload fun(command: string|string[]): ChannelotJob
+
+
+channelot.job({command})                                         *channelot.job*
+
+    Parameters: ~
+        {command}  (string|string[])
+
+    Returns: ~
+        (ChannelotJob)  @overload fun(command: string|string[]): ChannelotJob
+
+
+vim:tw=78:ts=8:noet:ft=help:norl:

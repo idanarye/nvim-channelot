@@ -1,10 +1,19 @@
-local M = {}
+---@mod channelot Channelot - Terminal and Job IO for Lua Coroutines
+---@brief [[
+---Channelot is a library plugin for operating Neovim jobs from a Lua
+---coroutine.
+---
+---Channelot was created as a supplemental plugin for Moonicipal
+---(https://github.com/idanarye/nvim-moonicipal), but can be used independent
+---of it.
+---@brief ]]
+local channelot = {}
 
 ---@class ChannelotTerminal
 local Terminal = {}
 
 ---@return ChannelotTerminal
-function M.terminal()
+function channelot.terminal()
     local obj = setmetatable({
         input_callbacks = {};
     }, {__index = Terminal})
@@ -281,7 +290,7 @@ end
 ---@param command string|string[]
 ---@return ChannelotJob
 ---@overload fun(command: string|string[]): ChannelotJob
-function M.terminal_job(env, command)
+function channelot.terminal_job(env, command)
     env, command = normalize_job_arguments(env, command)
     local obj = setmetatable({
         callbacks = {
@@ -316,7 +325,7 @@ end
 ---@param command string|string[]
 ---@return ChannelotJob
 ---@overload fun(command: string|string[]): ChannelotJob
-function M.job(env, command)
+function channelot.job(env, command)
     env, command = normalize_job_arguments(env, command)
     local obj = setmetatable({
         callbacks = {
@@ -348,4 +357,4 @@ function M.job(env, command)
     return obj
 end
 
-return M
+return channelot
