@@ -11,7 +11,7 @@ of it.
 ChannelotTerminal                                            *ChannelotTerminal*
 
 
-channelot.terminal()                                        *channelot.terminal*
+M.terminal()                                                *channelot.terminal*
 
     Returns: ~
         (ChannelotTerminal)
@@ -26,7 +26,7 @@ ChannelotJob                                                      *ChannelotJob*
 ChannelotJobIterConfig                                  *ChannelotJobIterConfig*
 
 
-channelot.terminal_job({command})                       *channelot.terminal_job*
+M.terminal_job({command})                               *channelot.terminal_job*
 
     Parameters: ~
         {command}  (string|string[])
@@ -35,7 +35,7 @@ channelot.terminal_job({command})                       *channelot.terminal_job*
         (ChannelotJob)  @overload fun(command: string|string[]): ChannelotJob
 
 
-channelot.job({command})                                         *channelot.job*
+M.job({command})                                                 *channelot.job*
 
     Parameters: ~
         {command}  (string|string[])

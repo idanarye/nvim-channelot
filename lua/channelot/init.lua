@@ -7,13 +7,13 @@
 ---(https://github.com/idanarye/nvim-moonicipal), but can be used independent
 ---of it.
 ---@brief ]]
-local channelot = {}
+local M = {}
 
 ---@class ChannelotTerminal
 local Terminal = {}
 
 ---@return ChannelotTerminal
-function channelot.terminal()
+function M.terminal()
     local obj = setmetatable({
         input_callbacks = {};
     }, {__index = Terminal})
@@ -290,7 +290,7 @@ end
 ---@param command string|string[]
 ---@return ChannelotJob
 ---@overload fun(command: string|string[]): ChannelotJob
-function channelot.terminal_job(env, command)
+function M.terminal_job(env, command)
     env, command = normalize_job_arguments(env, command)
     local obj = setmetatable({
         callbacks = {
@@ -325,7 +325,7 @@ end
 ---@param command string|string[]
 ---@return ChannelotJob
 ---@overload fun(command: string|string[]): ChannelotJob
-function channelot.job(env, command)
+function M.job(env, command)
     env, command = normalize_job_arguments(env, command)
     local obj = setmetatable({
         callbacks = {
@@ -357,4 +357,4 @@ function channelot.job(env, command)
     return obj
 end
 
-return channelot
+return M
