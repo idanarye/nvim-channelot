@@ -2,14 +2,38 @@
 Channelot - Terminal and Job IO for Lua Coroutines                   *channelot*
 
 Channelot is a library plugin for operating Neovim jobs from a Lua
-coroutine.
+coroutine. It supports:
+
+ * Starting jobs, with and without terminals.
+ * Starting multiple jobs on the same Neovim terminal.
+ * Job control is done via Lua coroutines - Channelot will resume the
+   coroutine once the job is finished and/or when it outputs new data.
 
 Channelot was created as a supplemental plugin for Moonicipal
 (https://github.com/idanarye/nvim-moonicipal), but can be used independent
 of it.
 
 ChannelotTerminal                                            *ChannelotTerminal*
+    Represents a terminal - a buffer that can handle PTY IO.
 
+    A single terminal can run multiple jobs. To only run a single job, prefer
+    |channelot.terminal_job|.
+
+    See: ~
+        |channelot.terminal|
+
+
+A terminal is created in the current buffer, so it is advisable to create
+a new buffer in a new split first. Unlike regular Neovim terminals that
+prompt for exit automatically when the process is finished,
+ChannelotTerminal can run multiple jobs so it needs to prompt the user
+manually to be closed.
+>
+    vim.cmd.new()
+    local t = channelot.terminal()
+    t:job('./command arg1 arg2'):wait()
+    t:prompt_exit()
+<
 
 M.terminal()                                                *channelot.terminal*
 
