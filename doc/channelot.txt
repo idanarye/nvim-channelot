@@ -13,56 +13,107 @@ Channelot was created as a supplemental plugin for Moonicipal
 (https://github.com/idanarye/nvim-moonicipal), but can be used independent
 of it.
 
-ChannelotTerminal                                            *ChannelotTerminal*
-    Represents a terminal - a buffer that can handle PTY IO.
-
-    A single terminal can run multiple jobs. To only run a single job, prefer
-    |channelot.terminal_job|.
-
-    See: ~
-        |channelot.terminal|
-
-
 A terminal is created in the current buffer, so it is advisable to create
 a new buffer in a new split first. Unlike regular Neovim terminals that
 prompt for exit automatically when the process is finished,
 ChannelotTerminal can run multiple jobs so it needs to prompt the user
-manually to be closed.
+manually to be closed:
 >
     vim.cmd.new()
     local t = channelot.terminal()
     t:job('./command arg1 arg2'):wait()
     t:prompt_exit()
 <
+A terminal with a job can also be created directly - in which case the user
+will be prompted automatically to close it, by Neovim itself:
+>
+    vim.cmd.new()
+    local j = channelot.terminal_job('./command arg1 arg2')
+    j:wait()
+<
+Jobs without a terminal can also be created:
+>
+    --No need to create a new window because we don't convert the current
+    --buffer to a terminal.
+    channelot.job('./command arg1 arg2')
+<
+Note that the job can be given as either as single string (with shell
+expansion) or as a list of strings (with no shell expansion):
+>
+    --Equivalent:
+    channelot.job[[./command a b\ c]]
+    channelot.job{'./command', 'a', 'b c'}
+<
+Also, environment variables can be given as a table before the command:
+>
+    --Equivalent (on POSIX shells):
+    channelot.job({
+        FOO='bar',
+        BAZ='qux',
+    }, {'./command', 'arg'})
+    channelot.job'FOO=bar BAZ=qux ./command arg'
+<
+All these methods create a |ChannelotJob| object, which can be used to
+control the job from within a Lua coroutine. |ChannelotJob:wait()| can be
+used to wait for the job to finish, and get its exit status:
+>
+    local exit_status = channelot.job'sleep 5':wait()
+<
+|ChannelotJob:iter()| can be used to get the stdout and stderr of a job:
+>
+    for _, line in channelot.job'ls':iter() do
+        print('Has file', line)
+    end
+<
+Note that jobs with PTY behave differently than jobs without PTY regarding
+their output.
+
+|ChannelotJob:write()| and |ChannelotJob:writeln()| can be used to write to
+a running job:
+>
+    local job = channelot.job'bc'
+    job:writeln('1 + 2')
+    for _, line in job:iter() do
+        print('1 + 2 =', line)
+        break
+    end
+    job:write('\r\4') --To simulate <C-d>
+<
+
+ChannelotTerminal                                            *ChannelotTerminal*
+
+    Fields: ~
+        {terminal_id}  (integer)
+
 
 M.terminal()                                                *channelot.terminal*
+    Convert the current buffer to a |ChannelotTerminal|.
 
     Returns: ~
         (ChannelotTerminal)
 
 
 ChannelotJob                                                      *ChannelotJob*
+    An handle to a Neovim job with functions for controlling it from a Lua coroutine.
 
     Fields: ~
+        {job_id}        (integer)
         {exit_status?}  (integer)
 
 
 ChannelotJobIterConfig                                  *ChannelotJobIterConfig*
 
+    Fields: ~
+        {stdout?}  ()
 
-M.terminal_job({command})                               *channelot.terminal_job*
 
-    Parameters: ~
-        {command}  (string|string[])
+M.terminal_job()                                        *channelot.terminal_job*
 
     Returns: ~
         (ChannelotJob)  @overload fun(command: string|string[]): ChannelotJob
 
 
-M.job({command})                                                 *channelot.job*
-
-    Parameters: ~
-        {command}  (string|string[])
+M.job()                                                          *channelot.job*
 
     Returns: ~
         (ChannelotJob)  @overload fun(command: string|string[]): ChannelotJob

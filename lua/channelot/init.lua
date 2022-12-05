@@ -14,28 +14,85 @@
 ---@brief ]]
 local M = {}
 
----Represents a terminal - a buffer that can handle PTY IO.
----
----A single terminal can run multiple jobs. To only run a single job, prefer
----|channelot.terminal_job|.
----@class ChannelotTerminal
----@see channelot.terminal
-local Terminal = {}
-
 ---@brief [[
 ---A terminal is created in the current buffer, so it is advisable to create
 ---a new buffer in a new split first. Unlike regular Neovim terminals that
 ---prompt for exit automatically when the process is finished,
 ---ChannelotTerminal can run multiple jobs so it needs to prompt the user
----manually to be closed.
+---manually to be closed:
 --->
 ---    vim.cmd.new()
 ---    local t = channelot.terminal()
 ---    t:job('./command arg1 arg2'):wait()
 ---    t:prompt_exit()
 ---<
+---A terminal with a job can also be created directly - in which case the user
+---will be prompted automatically to close it, by Neovim itself:
+--->
+---    vim.cmd.new()
+---    local j = channelot.terminal_job('./command arg1 arg2')
+---    j:wait()
+---<
+---Jobs without a terminal can also be created:
+--->
+---    --No need to create a new window because we don't convert the current
+---    --buffer to a terminal.
+---    channelot.job('./command arg1 arg2')
+---<
+---Note that the job can be given as either as single string (with shell
+---expansion) or as a list of strings (with no shell expansion):
+--->
+---    --Equivalent:
+---    channelot.job[[./command a b\ c]]
+---    channelot.job{'./command', 'a', 'b c'}
+---<
+---Also, environment variables can be given as a table before the command:
+--->
+---    --Equivalent (on POSIX shells):
+---    channelot.job({
+---        FOO='bar',
+---        BAZ='qux',
+---    }, {'./command', 'arg'})
+---    channelot.job'FOO=bar BAZ=qux ./command arg'
+---<
+---All these methods create a |ChannelotJob| object, which can be used to
+---control the job from within a Lua coroutine. |ChannelotJob:wait()| can be
+---used to wait for the job to finish, and get its exit status:
+--->
+---    local exit_status = channelot.job'sleep 5':wait()
+---<
+---|ChannelotJob:iter()| can be used to get the stdout and stderr of a job:
+--->
+---    for _, line in channelot.job'ls':iter() do
+---        print('Has file', line)
+---    end
+---<
+---Note that jobs with PTY behave differently than jobs without PTY regarding
+---their output.
+---
+---|ChannelotJob:write()| and |ChannelotJob:writeln()| can be used to write to
+---a running job:
+--->
+---    local job = channelot.job'bc'
+---    job:writeln('1 + 2')
+---    for _, line in job:iter() do
+---        print('1 + 2 =', line)
+---        break
+---    end
+---    job:write('\r\4') --To simulate <C-d>
+---<
 ---@brief ]]
 
+---Represents a terminal - a buffer that can handle PTY IO.
+---
+---A single terminal can run multiple jobs. To only run a single job, prefer
+---|channelot.terminal_job|.
+---@see channelot.terminal
+---@class ChannelotTerminal
+---@field terminal_id integer
+local Terminal = {}
+
+---Convert the current buffer to a |ChannelotTerminal|.
 ---@return ChannelotTerminal
 function M.terminal()
     local obj = setmetatable({
@@ -54,15 +111,18 @@ function M.terminal()
     return obj
 end
 
+---An handle to a Neovim job with functions for controlling it from a Lua coroutine.
 ---@class ChannelotJob
+---@field job_id integer 
 ---@field exit_status? integer
 local Job = {}
 
 ---@param env {[string]:any}
 ---@param command string|string[]
 ---@param opts? {[string]:any} not used now, will be used later
----@return {[string]:any}
+---@return {[string]:any}|nil
 ---@return string|string[]
+---@return {[string]:any} # not used now, will be used later
 local function normalize_job_arguments(env, command, opts)
     if type(env) == 'string' or (next(env) and vim.tbl_islist(env)) then
         return nil, env, command or {}
@@ -71,10 +131,11 @@ local function normalize_job_arguments(env, command, opts)
     end
 end
 
----@param env {[string]:any}
----@param command string|string[]
+---Start a job on a |ChannelotTerminal|.
+---@param env {[string]:any} Environment variables for the command
+---@param command string|(string[]) The command as a string or as a list of arguments
 ---@return ChannelotJob
----@overload fun(command: string|string[]): ChannelotJob
+---@overload fun(command: string|(string[])): ChannelotJob
 function Terminal:job(env, command)
     env, command = normalize_job_arguments(env, command)
 
@@ -120,14 +181,34 @@ function Terminal:job(env, command)
     return obj
 end
 
+---Write text as is directly to the terminal (NOT! the job - the terminal)
+---
+---Note that multiline text will come up weird if `\n` is used alone without
+---`\r`. This is a property of Neovim's terminal, not of Channelot. To fix
+---that, use |ChannelotTerminal:write| or |ChannelotTerminal:writeln|.
+---@param text string
 function Terminal:raw_write(text)
     vim.api.nvim_chan_send(self.terminal_id, text)
 end
 
+---Write text directly to the terminal (NOT! the job - the terminal)
+---
+---This will also fix the linefeed in multipline text.
+---@param text string
+function Terminal:write(text)
+    self:raw_write(string.gsub(text, '\n', '\r\n'))
+end
+
+---Write text directly to the terminal (NOT! the job - the terminal), and add CRLF.
+---
+---This will also fix the linefeed in multipline text.
+---@param text string
 function Terminal:writeln(text)
     self:raw_write(string.gsub(text, '\n', '\r\n') .. '\r\n')
 end
 
+---Read a single key press from the terminal.
+---@return string # the pressed keycode
 function Terminal:read_key()
     local co = coroutine.running()
     local function read_key_callback(data)
@@ -143,6 +224,13 @@ function Terminal:read_key()
     return coroutine.yield()
 end
 
+---Prompt the user to press a key and close the terminal.
+---
+---When using a job on a |channelot.terminal|, the terminal will not close
+---automatically after the job - because it can be used to run more jobs. Use
+---this method to prompt the user to close it.
+---@param prompt? string
+---@return string # the key the user pressed to close the terminal
 function Terminal:prompt_exit(prompt)
     if prompt == nil then
         prompt = '[Press any key in terminal mode to exit]'
@@ -161,6 +249,8 @@ function Terminal:prompt_exit(prompt)
     return key_pressed
 end
 
+---Wait for the job to finish. Must be called from a Lua coroutine.
+---@return integer # the job's exit status
 function Job:wait()
     if self.exit_status ~= nil then
         return self.exit_status
@@ -176,7 +266,12 @@ function Job:wait()
 end
 
 ---@class ChannelotJobIterConfig
+---@field stdout? "'buffered'"|"'unbuffered'"|"'ignore'"
+---@field stderr? "'buffered'"|"'unbuffered'"|"'ignore'"
 
+---Iterate over output from the job. Must be called from a Lua coroutine.
+---
+---Multiyields each time the type of line (stdout/stderr) and the line data.
 ---@param opts? ChannelotJobIterConfig
 function Job:iter(opts)
     opts = opts or {}
@@ -298,20 +393,25 @@ function Job:iter(opts)
     end
 end
 
-function Job:write(data)
-    vim.api.nvim_chan_send(self.job_id, data)
+---Write text to a running job's stdin.
+---@param text string
+function Job:write(text)
+    vim.api.nvim_chan_send(self.job_id, text)
 end
 
-function Job:writeln(data)
-    if data == nil then
+---Write text to a running job's stdin, and add a newline.
+---@param text? string leave empty to write only the newline
+function Job:writeln(text)
+    if text == nil then
         self:write('\n')
     else
-        self:write(data .. '\n')
+        self:write(text .. '\n')
     end
 end
 
----@param env {[string]:any}
----@param command string|string[]
+---Start a job on the current buffer, converting it to a terminal
+---@param env {[string]:any} Environment variables for the command
+---@param command string|(string[]) The command as a string or as a list of arguments
 ---@return ChannelotJob
 ---@overload fun(command: string|string[]): ChannelotJob
 function M.terminal_job(env, command)
@@ -345,8 +445,11 @@ function M.terminal_job(env, command)
     return obj
 end
 
----@param env {[string]:any}
----@param command string|string[]
+---Start a job without a terminal attached to it.
+---
+---Note: this job will not have a PTY.
+---@param env {[string]:any} Environment variables for the command
+---@param command string|(string[]) The command as a string or as a list of arguments
 ---@return ChannelotJob
 ---@overload fun(command: string|string[]): ChannelotJob
 function M.job(env, command)
