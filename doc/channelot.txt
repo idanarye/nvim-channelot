@@ -73,11 +73,11 @@ a running job:
 >
     local job = channelot.job'bc'
     job:writeln('1 + 2')
+    job:close_stdin()
     for _, line in job:iter() do
         print('1 + 2 =', line)
         break
     end
-    job:write('\r\4') --To simulate <C-d>
 <
 
 ChannelotTerminal                                            *ChannelotTerminal*

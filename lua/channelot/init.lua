@@ -75,11 +75,11 @@ local M = {}
 --->
 ---    local job = channelot.job'bc'
 ---    job:writeln('1 + 2')
+---    job:close_stdin()
 ---    for _, line in job:iter() do
 ---        print('1 + 2 =', line)
 ---        break
 ---    end
----    job:write('\r\4') --To simulate <C-d>
 ---<
 ---@brief ]]
 
@@ -407,6 +407,11 @@ function Job:writeln(text)
     else
         self:write(text .. '\n')
     end
+end
+
+---Close the job's standard input.
+function Job:close_stdin()
+    vim.fn.chanclose(self.job_id, 'stdin')
 end
 
 ---Start a job on the current buffer, converting it to a terminal
