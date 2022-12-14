@@ -1,0 +1,26 @@
+describe('channelot.terminal()', function()
+    before_each(EnsureSingleWindow)
+
+    local channelot = require'channelot'
+
+    it('runs multiple jobs', function()
+        local term = channelot.terminal()
+        term:job('echo hello'):wait()
+        term:job{'echo', 'world'}:wait()
+        WaitFor(1, function()
+            local output = vim.api.nvim_buf_get_lines(0, 0, 2, true)
+            return vim.deep_equal(output, {'hello', 'world'})
+        end)
+    end)
+
+    it('redirects user input to jobs', function()
+        local term = channelot.terminal()
+        term:job('bc | cat')
+        vim.cmd.startinsert()
+        vim.api.nvim_feedkeys('40 + 2\n', 'n', true)
+        WaitFor(1, function()
+            local output = vim.api.nvim_buf_get_lines(0, 0, 2, true)
+            return vim.deep_equal(output, {'40 + 2', '42'})
+        end)
+    end)
+end)
