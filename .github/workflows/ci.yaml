@@ -7,7 +7,7 @@ on:
 jobs:
   test:
     name: Tests
-    runs-on: ${{ matrix.os }}
+    # runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v2
       - uses: MunifTanjim/setup-neovim-action@v1
