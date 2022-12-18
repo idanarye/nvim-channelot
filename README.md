@@ -11,8 +11,8 @@ Channelot is a library plugin for operating Neovim jobs from a Lua coroutine. It
 
 Channelot was created as a supplemental plugin for [Moonicipal](https://github.com/idanarye/nvim-moonicipal), but can be used independent of it.
 
-FUTURES (IMPLEMENTED/PLANNED)
-=============================
+FEATURES (IMPLEMENTED/PLANNED)
+==============================
 
 - [x] Control jobs from coroutines.
 - [x] Run jobs in automatic terminal, manually managed terminal, or no terminal.
