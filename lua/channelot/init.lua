@@ -83,21 +83,12 @@ local M = {}
 ---<
 ---@brief ]]
 
----Represents a terminal - a buffer that can handle PTY IO.
----
----A single terminal can run multiple jobs. To only run a single job, prefer
----|channelot.terminal_job|.
----@see channelot.terminal
----@class ChannelotTerminal
----@field terminal_id integer
-local Terminal = {}
-
 ---Convert the current buffer to a |ChannelotTerminal|.
 ---@return ChannelotTerminal
 function M.terminal()
     local obj = setmetatable({
         input_callbacks = {};
-    }, {__index = Terminal})
+    }, {__index = require'channelot.Terminal'})
     obj.terminal_id = vim.api.nvim_open_term(0, {
         on_input = function(_, _, _, data)
             for _, callback in ipairs(obj.input_callbacks) do
@@ -111,323 +102,20 @@ function M.terminal()
     return obj
 end
 
----An handle to a Neovim job with functions for controlling it from a Lua coroutine.
----@class ChannelotJob
----@field job_id integer 
----@field exit_status? integer
-local Job = {}
-
----@param env {[string]:any}
----@param command string|string[]
----@param opts? {[string]:any} not used now, will be used later
----@return {[string]:any}|nil
----@return string|string[]
----@return {[string]:any} # not used now, will be used later
-local function normalize_job_arguments(env, command, opts)
-    if type(env) == 'string' or (next(env) and vim.tbl_islist(env)) then
-        return nil, env, command or {}
-    else
-        return env, command, opts or {}
-    end
-end
-
----Start a job on a |ChannelotTerminal|.
----@param env {[string]:any} Environment variables for the command
----@param command string|(string[]) The command as a string or as a list of arguments
----@return ChannelotJob
----@overload fun(command: string|(string[])): ChannelotJob
-function Terminal:job(env, command)
-    env, command = normalize_job_arguments(env, command)
-
-    assert(self.current_job == nil, 'terminal is already running a job')
-
-    local terminal_id = self.terminal_id
-
-    local obj = setmetatable({
-        callbacks = {
-            exit = {};
-            stdout = {};
-            stderr = {};
-        };
-    }, {__index = Job})
-
-    local function on_output(_, data, event)
-        for cbn, callback in pairs(obj.callbacks[event]) do
-            callback(event, data)
-        end
-        for i, text in pairs(data) do
-            if 1 < i then
-                vim.api.nvim_chan_send(terminal_id, '\r\n')
-            end
-            vim.api.nvim_chan_send(terminal_id, text)
-        end
-    end
-
-    obj.job_id = vim.fn.jobstart(command, {
-        env = env;
-        pty = true;
-        stdout_buffered = false;
-        on_stdout = on_output;
-        on_stderr = on_output;
-        on_exit = function(_, exit_status)
-            obj.exit_status = exit_status
-            self.current_job = nil
-            for _, callback in pairs(obj.callbacks.exit) do
-                callback('exit', exit_status)
-            end
-        end
-    })
-    self.current_job = obj
-    return obj
-end
-
----Write text as is directly to the terminal (NOT! the job - the terminal)
----
----Note that multiline text will come up weird if `\n` is used alone without
----`\r`. This is a property of Neovim's terminal, not of Channelot. To fix
----that, use |ChannelotTerminal:write| or |ChannelotTerminal:writeln|.
----@param text string
-function Terminal:raw_write(text)
-    vim.api.nvim_chan_send(self.terminal_id, text)
-end
-
----Write text directly to the terminal (NOT! the job - the terminal)
----
----This will also fix the linefeed in multipline text.
----@param text string
-function Terminal:write(text)
-    self:raw_write(string.gsub(text, '\n', '\r\n'))
-end
-
----Write text directly to the terminal (NOT! the job - the terminal), and add CRLF.
----
----This will also fix the linefeed in multipline text.
----@param text string
-function Terminal:writeln(text)
-    self:raw_write(string.gsub(text, '\n', '\r\n') .. '\r\n')
-end
-
----Read a single key press from the terminal.
----@return string # the pressed keycode
-function Terminal:read_key()
-    local co = coroutine.running()
-    local function read_key_callback(data)
-        for idx, callback in ipairs(self.input_callbacks) do
-            if callback == read_key_callback then
-                table.remove(self.input_callbacks, idx)
-            end
-        end
-        coroutine.resume(co, data)
-    end
-
-    table.insert(self.input_callbacks, read_key_callback)
-    return coroutine.yield()
-end
-
----Prompt the user to press a key and close the terminal.
----
----When using a job on a |channelot.terminal|, the terminal will not close
----automatically after the job - because it can be used to run more jobs. Use
----this method to prompt the user to close it.
----@param prompt? string
----@return string # the key the user pressed to close the terminal
-function Terminal:prompt_exit(prompt)
-    if prompt == nil then
-        prompt = '[Press any key in terminal mode to exit]'
-    end
-    if prompt then
-        self:raw_write('\r\n' .. prompt)
-    end
-    local key_pressed = self:read_key()
-    local chan_info = vim.api.nvim_get_chan_info(self.terminal_id)
-    local co = coroutine.running()
-    vim.schedule(function()
-        vim.api.nvim_buf_delete(chan_info.buffer, {force = true})
-        coroutine.resume(co)
-    end)
-    coroutine.yield()
-    return key_pressed
-end
-
----Wait for the job to finish. Must be called from a Lua coroutine.
----@return integer # the job's exit status
-function Job:wait()
-    if self.exit_status ~= nil then
-        return self.exit_status
-    end
-    local co = coroutine.running()
-    assert(co, 'job:wait must be called from a coroutine')
-    self.callbacks.exit[{}] = function()
-        coroutine.resume(co)
-    end
-    coroutine.yield()
-    assert(self.exit_status, 'job:wait returned but exit status was not set')
-    return self.exit_status
-end
-
----@class ChannelotJobIterConfig
----@field stdout? "'buffered'"|"'unbuffered'"|"'ignore'"
----@field stderr? "'buffered'"|"'unbuffered'"|"'ignore'"
-
----Iterate over output from the job. Must be called from a Lua coroutine.
----
----Multiyields each time the type of line (stdout/stderr) and the line data.
----@param opts? ChannelotJobIterConfig
-function Job:iter(opts)
-    opts = opts or {}
-    local buffer = {read_from = 0, write_to = 0}
-
-    local function write_to_buffer(...)
-        buffer[buffer.write_to] = {...}
-        buffer.write_to = buffer.write_to + 1
-    end
-
-    local chan_info = vim.api.nvim_get_chan_info(self.job_id)
-
-    local line_buffers = {
-        stdout = {},
-        stderr = {},
-    }
-
-    local co = coroutine.running()
-
-    local handle_data_event_buffered
-    if chan_info.pty then
-        handle_data_event_buffered = function(event, data)
-            local should_resume = false
-            local line_buffer = line_buffers[event]
-            for _, line in ipairs(data) do
-                if vim.endswith(line, '\r') then
-                    if next(line_buffer) ~= nil then
-                        table.insert(line_buffer, line)
-                        line = table.concat(line_buffer)
-                        line_buffer = {}
-                        line_buffers[event] = line_buffer
-                    end
-                    write_to_buffer(event, line)
-                    should_resume = true
-                elseif line ~= '' then
-                    table.insert(line_buffer, line)
-                end
-            end
-            if should_resume then
-                coroutine.resume(co)
-            end
-        end
-    else
-        handle_data_event_buffered = function(event, data)
-            local should_resume = false
-            local line_buffer = line_buffers[event]
-            for i, line in ipairs(data) do
-                if i == 1 and next(line_buffer) ~= nil then
-                    table.insert(line_buffer, line)
-                    line = table.concat(line_buffer)
-                    line_buffer = {}
-                    line_buffers[event] = line_buffer
-
-                    if data[i + 1] ~= nil then
-                        write_to_buffer(event, line)
-                        should_resume = true
-                    end
-                elseif data[i + 1] ~= nil then
-                    write_to_buffer(event, line)
-                    should_resume = true
-                elseif line ~= '' then
-                    table.insert(line_buffer, line)
-                end
-            end
-            if should_resume then
-                coroutine.resume(co)
-            end
-        end
-    end
-    local function handle_data_event_unbuffered(event, data)
-        local should_resume = false
-        for _, line in ipairs(data) do
-            if line ~= '' then
-                write_to_buffer(event, line)
-                should_resume = true
-            end
-        end
-        if should_resume then
-            coroutine.resume(co)
-        end
-    end
-
-    local handle_streams_with = {
-        exit=function()
-            coroutine.resume(co)
-        end,
-    }
-
-    for _, stream_name in ipairs({'stdout', 'stderr'}) do
-        local stream_setting = opts[stream_name] or 'buffered'
-        if stream_setting == 'buffered' then
-            handle_streams_with[stream_name] = handle_data_event_buffered
-        elseif stream_setting == 'unbuffered' then
-            handle_streams_with[stream_name] = handle_data_event_unbuffered
-        elseif stream_setting == 'ignore' then
-        else
-            error('Invalid stream setting ' .. vim.inspect(stream_setting))
-        end
-    end
-
-    local callbacks_key = {}
-    return function()
-        while self.exit_status == nil or buffer.read_from < buffer.write_to do
-            if buffer.read_from < buffer.write_to then
-                local from_buffer = buffer[buffer.read_from]
-                buffer[buffer.read_from] = nil
-                buffer.read_from = buffer.read_from + 1
-                return unpack(from_buffer)
-            end
-
-            for stream_name, stream_handler in pairs(handle_streams_with) do
-                self.callbacks[stream_name][callbacks_key] = stream_handler
-            end
-            coroutine.yield()
-            for stream_name in pairs(handle_streams_with) do
-                self.callbacks[stream_name][callbacks_key] = nil
-            end
-        end
-    end
-end
-
----Write text to a running job's stdin.
----@param text string
-function Job:write(text)
-    vim.api.nvim_chan_send(self.job_id, text)
-end
-
----Write text to a running job's stdin, and add a newline.
----@param text? string leave empty to write only the newline
-function Job:writeln(text)
-    if text == nil then
-        self:write('\n')
-    else
-        self:write(text .. '\n')
-    end
-end
-
----Close the job's standard input.
-function Job:close_stdin()
-    vim.fn.chanclose(self.job_id, 'stdin')
-end
-
 ---Start a job on the current buffer, converting it to a terminal
 ---@param env {[string]:any} Environment variables for the command
 ---@param command string|(string[]) The command as a string or as a list of arguments
 ---@return ChannelotJob
 ---@overload fun(command: string|string[]): ChannelotJob
 function M.terminal_job(env, command)
-    env, command = normalize_job_arguments(env, command)
+    env, command = require'channelot.util'.normalize_job_arguments(env, command)
     local obj = setmetatable({
         callbacks = {
             exit = {};
             stdout = {};
             stderr = {};
         };
-    }, {__index = Job})
+    }, {__index = require'channelot.Job'})
 
     local function on_output(_, data, event)
         for _, callback in pairs(obj.callbacks[event]) do
@@ -458,14 +146,14 @@ end
 ---@return ChannelotJob
 ---@overload fun(command: string|string[]): ChannelotJob
 function M.job(env, command)
-    env, command = normalize_job_arguments(env, command)
+    env, command = require'channelot.util'.normalize_job_arguments(env, command)
     local obj = setmetatable({
         callbacks = {
             exit = {};
             stdout = {};
             stderr = {};
         };
-    }, {__index = Job})
+    }, {__index = require'channelot.Job'})
 
     local function on_output(_, data, event)
         for _, callback in pairs(obj.callbacks[event]) do

@@ -5,4 +5,4 @@ test:
 
 docs:
 	mkdir -p doc
-	lemmy-help --prefix-func lua/channelot/init.lua | tee doc/channelot.txt
+	lemmy-help --prefix-func lua/channelot/{init,Terminal,Job}.lua | tee doc/channelot.txt
