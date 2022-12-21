@@ -13,7 +13,7 @@ local ChannelotTerminal = {}
 ---@return ChannelotJob
 ---@overload fun(command: string|(string[])): ChannelotJob
 function ChannelotTerminal:job(env, command)
-    env, command = require'channelot/util'.normalize_job_arguments(env, command)
+    env, command = require'channelot.util'.normalize_job_arguments(env, command)
 
     assert(self.current_job == nil, 'terminal is already running a job')
 
@@ -25,7 +25,7 @@ function ChannelotTerminal:job(env, command)
             stdout = {};
             stderr = {};
         };
-    }, {__index = require'channelot/Job'})
+    }, {__index = require'channelot.Job'})
 
     local function on_output(_, data, event)
         for cbn, callback in pairs(obj.callbacks[event]) do

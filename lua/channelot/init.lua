@@ -88,7 +88,7 @@ local M = {}
 function M.terminal()
     local obj = setmetatable({
         input_callbacks = {};
-    }, {__index = require'channelot/Terminal'})
+    }, {__index = require'channelot.Terminal'})
     obj.terminal_id = vim.api.nvim_open_term(0, {
         on_input = function(_, _, _, data)
             for _, callback in ipairs(obj.input_callbacks) do
@@ -108,14 +108,14 @@ end
 ---@return ChannelotJob
 ---@overload fun(command: string|string[]): ChannelotJob
 function M.terminal_job(env, command)
-    env, command = require'channelot/util'.normalize_job_arguments(env, command)
+    env, command = require'channelot.util'.normalize_job_arguments(env, command)
     local obj = setmetatable({
         callbacks = {
             exit = {};
             stdout = {};
             stderr = {};
         };
-    }, {__index = require'channelot/Job'})
+    }, {__index = require'channelot.Job'})
 
     local function on_output(_, data, event)
         for _, callback in pairs(obj.callbacks[event]) do
@@ -146,14 +146,14 @@ end
 ---@return ChannelotJob
 ---@overload fun(command: string|string[]): ChannelotJob
 function M.job(env, command)
-    env, command = require'channelot/util'.normalize_job_arguments(env, command)
+    env, command = require'channelot.util'.normalize_job_arguments(env, command)
     local obj = setmetatable({
         callbacks = {
             exit = {};
             stdout = {};
             stderr = {};
         };
-    }, {__index = require'channelot/Job'})
+    }, {__index = require'channelot.Job'})
 
     local function on_output(_, data, event)
         for _, callback in pairs(obj.callbacks[event]) do
