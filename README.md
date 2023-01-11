@@ -11,6 +11,8 @@ Channelot is a library plugin for operating Neovim jobs from a Lua coroutine. It
 
 Channelot was created as a supplemental plugin for [Moonicipal](https://github.com/idanarye/nvim-moonicipal), but can be used independent of it.
 
+For a more through explanation, please to this section in a blog post about Moonicipal: https://dev.to/idanarye/moonicipal-explained-4h02#cached-buffers-and-channelot-terminals
+
 FEATURES (IMPLEMENTED/PLANNED)
 ==============================
 
