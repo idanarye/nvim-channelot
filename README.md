@@ -25,6 +25,6 @@ FEATURES (IMPLEMENTED/PLANNED)
 CONTRIBUTION GUIDELINES
 =======================
 
-* If your contribution can be reasonably tested with automation tests, add tests. The tests run with [a specific branch in a fork of Plenary](https://github.com/idanarye/plenary.nvim/tree/async-testing) that allows async testing ([there is a PR to include it in the main repo](https://github.com/nvim-lua/plenary.nvim/pull/426)) 
+* If your contribution can be reasonably tested with automation tests, add tests.
 * Documentation comments must be compatible with both [Sumneko Language Server](https://github.com/sumneko/lua-language-server/wiki/Annotations) and [lemmy-help](https://github.com/numToStr/lemmy-help/blob/master/emmylua.md). If you do something that changes the documentation, please run `make docs` to update the vimdoc.
 * Update the changelog according to the [Keep a Changelog](http://keepachangelog.com/en/1.0.0/) format.
