@@ -1,5 +1,12 @@
+---@class ChannelotJobOptions
+---@field pty? boolean Enforce a PTY or a non-PTY. Leave nil to use default
+local ChannelotJobOptions
+
 ---An handle to a Neovim job with functions for controlling it from a Lua coroutine.
 ---@class ChannelotJob
+---@field env {[string]:any}
+---@field command string|string[]
+---@field pty boolean
 ---@field job_id integer 
 ---@field exit_status? integer
 local ChannelotJob = {}

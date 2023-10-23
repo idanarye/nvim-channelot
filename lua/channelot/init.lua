@@ -105,11 +105,30 @@ end
 ---Start a job on the current buffer, converting it to a terminal
 ---@param env {[string]:any} Environment variables for the command
 ---@param command string|(string[]) The command as a string or as a list of arguments
+---@param opts ChannelotJobOptions
 ---@return ChannelotJob
 ---@overload fun(command: string|string[]): ChannelotJob
-function M.terminal_job(env, command)
-    env, command = require'channelot.util'.normalize_job_arguments(env, command)
+---@overload fun(command: string|string[], opts: table): ChannelotJob
+function M.terminal_job(env, command, opts)
+    env, command, opts = require'channelot.util'.normalize_job_arguments(env, command, opts)
+    local pty = require'channelot.util'.first_non_nil(opts.pty, true)
+
+    if not pty then
+        local terminal = M.terminal()
+        local job = terminal:job(env, command, opts)
+        table.insert(job.callbacks.exit, function(_, exit_status)
+            local co = coroutine.create(function()
+                terminal:prompt_exit('[Process exited ' .. exit_status .. ']')
+            end)
+            coroutine.resume(co)
+        end)
+        return job
+    end
+
     local obj = setmetatable({
+        env = env,
+        command = command,
+        pty = pty,
         callbacks = {
             exit = {};
             stdout = {};
@@ -125,6 +144,7 @@ function M.terminal_job(env, command)
 
     obj.job_id = vim.fn.termopen(command, {
         env = env;
+        pty = pty;
         stdout_buffered = false;
         on_stdout = on_output;
         on_stderr = on_output;
@@ -145,9 +165,13 @@ end
 ---@param command string|(string[]) The command as a string or as a list of arguments
 ---@return ChannelotJob
 ---@overload fun(command: string|string[]): ChannelotJob
-function M.job(env, command)
-    env, command = require'channelot.util'.normalize_job_arguments(env, command)
+function M.job(env, command, opts)
+    env, command, opts = require'channelot.util'.normalize_job_arguments(env, command, opts)
+    local pty = require'channelot.util'.first_non_nil(opts.pty, false)
     local obj = setmetatable({
+        env = env,
+        command = command,
+        pty = pty,
         callbacks = {
             exit = {};
             stdout = {};
@@ -163,7 +187,7 @@ function M.job(env, command)
 
     obj.job_id = vim.fn.jobstart(command, {
         env = env;
-        pty = false;
+        pty = pty;
         stdout_buffered = false;
         on_stdout = on_output;
         on_stderr = on_output;

@@ -12,14 +12,18 @@ local ChannelotTerminal = {}
 ---@param command string|(string[]) The command as a string or as a list of arguments
 ---@return ChannelotJob
 ---@overload fun(command: string|(string[])): ChannelotJob
-function ChannelotTerminal:job(env, command)
-    env, command = require'channelot.util'.normalize_job_arguments(env, command)
+function ChannelotTerminal:job(env, command, opts)
+    env, command, opts = require'channelot.util'.normalize_job_arguments(env, command, opts)
+    local pty = require'channelot.util'.first_non_nil(opts.pty, true)
 
     assert(self.current_job == nil, 'terminal is already running a job')
 
     local terminal_id = self.terminal_id
 
     local obj = setmetatable({
+        env = env,
+        command = command,
+        pty = pty,
         callbacks = {
             exit = {};
             stdout = {};
@@ -41,7 +45,7 @@ function ChannelotTerminal:job(env, command)
 
     obj.job_id = vim.fn.jobstart(command, {
         env = env;
-        pty = true;
+        pty = pty;
         stdout_buffered = false;
         on_stdout = on_output;
         on_stderr = on_output;
