@@ -208,4 +208,15 @@ function ChannelotJob:close_stdin()
     vim.fn.chanclose(self.job_id, 'stdin')
 end
 
+---Invoke the delegate on the job.
+---
+---This can be used with third party plugins that add capabilities to Channelot
+---jobs, or that want to utilize them.
+---@param dlg fun(job: ChannelotJob, ...)
+---@return ChannelotJob # The job itself
+function ChannelotJob:using(dlg, ...)
+    dlg(self, ...)
+    return self
+end
+
 return ChannelotJob
