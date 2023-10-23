@@ -20,6 +20,38 @@ function ChannelotJob:wait()
     return self.exit_status
 end
 
+---Wait for the job to finish with an exit status. Must be called from a Lua coroutine.
+---
+---If the command returns an exit status that differs from the provided
+--`expected_status`, an error table will be raied -with the exit status in its
+--`exit_status` field.
+---
+---If no `expected_status` is given, it defaults to 0. If a list-like table is
+---given, this method will check that the exit status is one of the numbers in
+---that table.
+---@param expected_status? integer | integer[]
+function ChannelotJob:check(expected_status)
+    if self.exit_status == nil then
+        self:wait()
+    end
+
+    local status_ok
+    if expected_status == nil then
+        status_ok = self.exit_status == 0
+    elseif type(expected_status) == 'number' then
+        status_ok = self.exit_status == expected_status
+    elseif type(expected_status) == 'table' then
+        status_ok = vim.tbl_contains(expected_status, self.exit_status)
+    end
+
+    if not status_ok then
+        error({
+            'Channelot job failed with exit status ' .. self.exit_status,
+            exit_status = self.exit_status
+        })
+    end
+end
+
 ---@class ChannelotJobIterConfig
 ---@field stdout? "'buffered'"|"'unbuffered'"|"'ignore'"
 ---@field stderr? "'buffered'"|"'unbuffered'"|"'ignore'"

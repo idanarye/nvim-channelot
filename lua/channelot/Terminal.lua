@@ -125,4 +125,22 @@ function ChannelotTerminal:prompt_exit(prompt)
     return key_pressed
 end
 
+---Run a code block (function) with the terminal, and then prompt the user to close it.
+---
+---If the block raises, as an error, a table with an `exit_status` fields (such
+---as the one job:check()` raises) the exception will be swallowed and the exit
+---status will be shown in the terminal's exit prompt.
+---@param block fun(terminal: ChannelotTerminal)
+function ChannelotTerminal:with(block)
+    local ok, err = pcall(block, self)
+    if ok then
+        self:prompt_exit()
+    elseif type(err) == 'table' and err.exit_status then
+        self:prompt_exit('[Process exited ' .. err.exit_status .. ']')
+    else
+        self:prompt_exit('[Error occured inside terminal block]')
+        error(err)
+    end
+end
+
 return ChannelotTerminal
