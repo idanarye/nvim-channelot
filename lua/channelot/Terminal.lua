@@ -10,8 +10,10 @@ local ChannelotTerminal = {}
 ---Start a job on a |ChannelotTerminal|.
 ---@param env {[string]:any} Environment variables for the command
 ---@param command string|(string[]) The command as a string or as a list of arguments
+---@param opts? ChannelotJobOptions
 ---@return ChannelotJob
 ---@overload fun(command: string|(string[])): ChannelotJob
+---@overload fun(command: string|(string[]), opts: table): ChannelotJob
 function ChannelotTerminal:job(env, command, opts)
     env, command, opts = require'channelot.util'.normalize_job_arguments(env, command, opts)
     local pty = require'channelot.util'.first_non_nil(opts.pty, true)

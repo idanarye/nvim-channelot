@@ -94,7 +94,7 @@ function M.terminal()
             for _, callback in ipairs(obj.input_callbacks) do
                 callback(data)
             end
-            if obj.current_job ~= nil then
+            if obj.current_job ~= nil and obj.current_job.pty then
                 vim.api.nvim_chan_send(obj.current_job.job_id, data)
             end
         end
@@ -105,10 +105,10 @@ end
 ---Start a job on the current buffer, converting it to a terminal
 ---@param env {[string]:any} Environment variables for the command
 ---@param command string|(string[]) The command as a string or as a list of arguments
----@param opts ChannelotJobOptions
+---@param opts? ChannelotJobOptions
 ---@return ChannelotJob
----@overload fun(command: string|string[]): ChannelotJob
----@overload fun(command: string|string[], opts: table): ChannelotJob
+---@overload fun(command: string|(string[])): ChannelotJob
+---@overload fun(command: string|(string[]), opts: table): ChannelotJob
 function M.terminal_job(env, command, opts)
     env, command, opts = require'channelot.util'.normalize_job_arguments(env, command, opts)
     local pty = require'channelot.util'.first_non_nil(opts.pty, true)
@@ -160,11 +160,13 @@ end
 
 ---Start a job without a terminal attached to it.
 ---
----Note: this job will not have a PTY.
+---Note: this job will not have a PTY, unless `{ pty = true }` is passed in the `opts`.
 ---@param env {[string]:any} Environment variables for the command
 ---@param command string|(string[]) The command as a string or as a list of arguments
+---@param opts? ChannelotJobOptions
 ---@return ChannelotJob
----@overload fun(command: string|string[]): ChannelotJob
+---@overload fun(command: string|(string[])): ChannelotJob
+---@overload fun(command: string|(string[]), opts: table): ChannelotJob
 function M.job(env, command, opts)
     env, command, opts = require'channelot.util'.normalize_job_arguments(env, command, opts)
     local pty = require'channelot.util'.first_non_nil(opts.pty, false)

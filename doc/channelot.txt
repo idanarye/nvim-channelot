@@ -1,4 +1,4 @@
-================================================================================
+==============================================================================
 Channelot - Terminal and Job IO for Lua Coroutines                   *channelot*
 
 Channelot is a library plugin for operating Neovim jobs from a Lua
@@ -87,16 +87,24 @@ M.terminal()                                                *channelot.terminal*
         (ChannelotTerminal)
 
 
-M.terminal_job()                                        *channelot.terminal_job*
+M.terminal_job({opts?})                                 *channelot.terminal_job*
+
+    Parameters: ~
+        {opts?}  (ChannelotJobOptions)
 
     Returns: ~
-        (ChannelotJob)  @overload fun(command: string|string[]): ChannelotJob
+        (ChannelotJob)  @overload fun(command: string|(string[])): ChannelotJob
+                        @overload fun(command: string|(string[]), opts: table): ChannelotJob
 
 
-M.job()                                                          *channelot.job*
+M.job({opts?})                                                   *channelot.job*
+
+    Parameters: ~
+        {opts?}  (ChannelotJobOptions)
 
     Returns: ~
-        (ChannelotJob)  @overload fun(command: string|string[]): ChannelotJob
+        (ChannelotJob)  @overload fun(command: string|(string[])): ChannelotJob
+                        @overload fun(command: string|(string[]), opts: table): ChannelotJob
 
 
 ChannelotTerminal                                            *ChannelotTerminal*
@@ -105,10 +113,14 @@ ChannelotTerminal                                            *ChannelotTerminal*
         {terminal_id}  (integer)
 
 
-ChannelotTerminal:job()                                  *ChannelotTerminal:job*
+ChannelotTerminal:job({opts?})                           *ChannelotTerminal:job*
+
+    Parameters: ~
+        {opts?}  (ChannelotJobOptions)
 
     Returns: ~
         (ChannelotJob)  @overload fun(command: string|(string[])): ChannelotJob
+                        @overload fun(command: string|(string[]), opts: table): ChannelotJob
 
 
 ChannelotTerminal:raw_write({text})                *ChannelotTerminal:raw_write*
@@ -161,12 +173,28 @@ ChannelotTerminal:prompt_exit({prompt?})         *ChannelotTerminal:prompt_exit*
         (string)   the key the user pressed to close the terminal
 
 
+ChannelotTerminal:with({block})                         *ChannelotTerminal:with*
+    Run a code block (function) with the terminal, and then prompt the user to close it.
+
+    If the block raises, as an error, a table with an `exit_status` fields (such
+    as the one job:check()` raises) the exception will be swallowed and the exit
+    status will be shown in the terminal's exit prompt.
+
+    Parameters: ~
+        {block}  (fun(terminal:ChannelotTerminal))
+
+
+ChannelotJobOptions                                        *ChannelotJobOptions*
+
+    Fields: ~
+        {pty?}  (boolean)  Enforce a PTY or a non-PTY. Leave nil to use default. If false, keyboard input is disabled for the job.
+
+
 ChannelotJob                                                      *ChannelotJob*
     An handle to a Neovim job with functions for controlling it from a Lua coroutine.
 
     Fields: ~
-        {job_id}        (integer)
-        {exit_status?}  (integer)
+        {env}  ()
 
 
 ChannelotJob:wait()                                          *ChannelotJob:wait*
@@ -174,6 +202,16 @@ ChannelotJob:wait()                                          *ChannelotJob:wait*
 
     Returns: ~
         (integer)   the job's exit status
+
+
+ChannelotJob:check({expected_status?})                      *ChannelotJob:check*
+
+    If no `expected_status` is given, it defaults to 0. If a list-like table is
+    given, this method will check that the exit status is one of the numbers in
+    that table.
+
+    Parameters: ~
+        {expected_status?}  (integer|integer[])
 
 
 ChannelotJobIterConfig                                  *ChannelotJobIterConfig*
@@ -207,6 +245,12 @@ ChannelotJob:writeln({text?})                             *ChannelotJob:writeln*
 
 ChannelotJob:close_stdin()                            *ChannelotJob:close_stdin*
     Close the job's standard input.
+
+
+ChannelotJob:using()                                        *ChannelotJob:using*
+
+    Returns: ~
+        (ChannelotJob)   The job itself
 
 
 vim:tw=78:ts=8:noet:ft=help:norl:
