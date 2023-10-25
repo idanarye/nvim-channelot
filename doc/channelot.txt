@@ -87,24 +87,33 @@ M.terminal()                                                *channelot.terminal*
         (ChannelotTerminal)
 
 
-M.terminal_job({opts?})                                 *channelot.terminal_job*
+                                                        *channelot.terminal_job*
+M.terminal_job({env}, {command}, {opts?})
+    Start a job on the current buffer, converting it to a terminal
 
     Parameters: ~
-        {opts?}  (ChannelotJobOptions)
+        {env}      (table<string,any>)    Environment variables for the command
+        {command}  (string|string[])      The command as a string or as a list of arguments
+        {opts?}    (ChannelotJobOptions)
 
     Returns: ~
-        (ChannelotJob)  @overload fun(command: string|(string[])): ChannelotJob
-                        @overload fun(command: string|(string[]), opts: table): ChannelotJob
+        (ChannelotJob)  @overload fun(command: string|string[]): ChannelotJob
+                        @overload fun(command: string|string[], opts: table): ChannelotJob
 
 
-M.job({opts?})                                                   *channelot.job*
+M.job({env}, {command}, {opts?})                                 *channelot.job*
+    Start a job without a terminal attached to it.
+
+    Note: this job will not have a PTY, unless `{ pty = true }` is passed in the `opts`.
 
     Parameters: ~
-        {opts?}  (ChannelotJobOptions)
+        {env}      (table<string,any>)    Environment variables for the command
+        {command}  (string|string[])      The command as a string or as a list of arguments
+        {opts?}    (ChannelotJobOptions)
 
     Returns: ~
-        (ChannelotJob)  @overload fun(command: string|(string[])): ChannelotJob
-                        @overload fun(command: string|(string[]), opts: table): ChannelotJob
+        (ChannelotJob)  @overload fun(command: string|string[]): ChannelotJob
+                        @overload fun(command: string|string[], opts: table): ChannelotJob
 
 
 ChannelotTerminal                                            *ChannelotTerminal*
@@ -113,14 +122,18 @@ ChannelotTerminal                                            *ChannelotTerminal*
         {terminal_id}  (integer)
 
 
-ChannelotTerminal:job({opts?})                           *ChannelotTerminal:job*
+                                                         *ChannelotTerminal:job*
+ChannelotTerminal:job({env}, {command}, {opts?})
+    Start a job on a |ChannelotTerminal|.
 
     Parameters: ~
-        {opts?}  (ChannelotJobOptions)
+        {env}      (table<string,any>)    Environment variables for the command
+        {command}  (string|string[])      The command as a string or as a list of arguments
+        {opts?}    (ChannelotJobOptions)
 
     Returns: ~
-        (ChannelotJob)  @overload fun(command: string|(string[])): ChannelotJob
-                        @overload fun(command: string|(string[]), opts: table): ChannelotJob
+        (ChannelotJob)  @overload fun(command: string|string[]): ChannelotJob
+                        @overload fun(command: string|string[], opts: table): ChannelotJob
 
 
 ChannelotTerminal:raw_write({text})                *ChannelotTerminal:raw_write*
@@ -194,7 +207,11 @@ ChannelotJob                                                      *ChannelotJob*
     An handle to a Neovim job with functions for controlling it from a Lua coroutine.
 
     Fields: ~
-        {env}  ()
+        {env}           (table<string,any>)
+        {command}       (string|string[])
+        {pty}           (boolean)
+        {job_id}        (integer)
+        {exit_status?}  (integer)
 
 
 ChannelotJob:wait()                                          *ChannelotJob:wait*
@@ -217,7 +234,8 @@ ChannelotJob:check({expected_status?})                      *ChannelotJob:check*
 ChannelotJobIterConfig                                  *ChannelotJobIterConfig*
 
     Fields: ~
-        {stdout?}  ()
+        {stdout?}  ("buffered"|"unbuffered"|"ignore")
+        {stderr?}  ("buffered"|"unbuffered"|"ignore")
 
 
 ChannelotJob:iter({opts?})                                   *ChannelotJob:iter*
@@ -247,7 +265,14 @@ ChannelotJob:close_stdin()                            *ChannelotJob:close_stdin*
     Close the job's standard input.
 
 
-ChannelotJob:using()                                        *ChannelotJob:using*
+ChannelotJob:using({dlg})                                   *ChannelotJob:using*
+    Invoke the delegate on the job.
+
+    This can be used with third party plugins that add capabilities to Channelot
+    jobs, or that want to utilize them.
+
+    Parameters: ~
+        {dlg}  (fun(job:ChannelotJob))
 
     Returns: ~
         (ChannelotJob)   The job itself

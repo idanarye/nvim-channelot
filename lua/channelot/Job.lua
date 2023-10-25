@@ -4,7 +4,7 @@ local ChannelotJobOptions
 
 ---An handle to a Neovim job with functions for controlling it from a Lua coroutine.
 ---@class ChannelotJob
----@field env {[string]:any}
+---@field env table<string,any>
 ---@field command string|string[]
 ---@field pty boolean
 ---@field job_id integer 
@@ -60,8 +60,8 @@ function ChannelotJob:check(expected_status)
 end
 
 ---@class ChannelotJobIterConfig
----@field stdout? "'buffered'"|"'unbuffered'"|"'ignore'"
----@field stderr? "'buffered'"|"'unbuffered'"|"'ignore'"
+---@field stdout? `"buffered"`|`"unbuffered"`|`"ignore"`
+---@field stderr? `"buffered"`|`"unbuffered"`|`"ignore"`
 
 ---Iterate over output from the job. Must be called from a Lua coroutine.
 ---
@@ -212,10 +212,10 @@ end
 ---
 ---This can be used with third party plugins that add capabilities to Channelot
 ---jobs, or that want to utilize them.
----@param dlg fun(job: ChannelotJob, ...)
+---@param dlg fun(job: ChannelotJob)
 ---@return ChannelotJob # The job itself
-function ChannelotJob:using(dlg, ...)
-    dlg(self, ...)
+function ChannelotJob:using(dlg)
+    dlg(self)
     return self
 end
 
