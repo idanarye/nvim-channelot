@@ -4,6 +4,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [0.3.0](https://github.com/idanarye/nvim-channelot/compare/v0.2.0...v0.3.0) (2023-11-07)
+
+
+### ⚠ BREAKING CHANGES
+
+* Previously hidden terminals will silently prompt the user (which could not see the prompt)
+
+### Features
+
+* `channelot.terminal` can open terminal on a non-current buffer ([915964e](https://github.com/idanarye/nvim-channelot/commit/915964e0df5e86874322da245f91ef2c563f366e))
+* `ChannelotTerminal:with` automatically closes/exposes hidden terminal ([23eb517](https://github.com/idanarye/nvim-channelot/commit/23eb517168e29fe5c56ccb854a7309df53c4676b))
+* Add functions for better working with windows ([758bd22](https://github.com/idanarye/nvim-channelot/commit/758bd221fcc9704010a5db84e4004e2173e075e0))
+
 ## [0.2.0](https://github.com/idanarye/nvim-channelot/compare/v0.1.0...v0.2.0) (2023-10-25)
 
 
