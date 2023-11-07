@@ -195,6 +195,7 @@ function ChannelotTerminal:with(block)
             self:expose()
         end
         self:prompt_after_process_exited(err.exit_status)
+        return err.exit_status
     else
         if already_exposed then
             self:prompt_exit('[Error occured inside terminal block]')
