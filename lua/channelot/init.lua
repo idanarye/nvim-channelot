@@ -83,13 +83,18 @@ local M = {}
 ---<
 ---@brief ]]
 
+---@class ChannelotTerminalOpts
+---@field bufnr? number Use the specified buffer instead of the current buffer
+
 ---Convert the current buffer to a |ChannelotTerminal|.
+---@param opts? ChannelotTerminalOpts
 ---@return ChannelotTerminal
-function M.terminal()
+function M.terminal(opts)
+    opts = opts or {}
     local obj = setmetatable({
         input_callbacks = {};
     }, {__index = require'channelot.Terminal'})
-    obj.terminal_id = vim.api.nvim_open_term(0, {
+    obj.terminal_id = vim.api.nvim_open_term(opts.bufnr or 0, {
         on_input = function(_, _, _, data)
             for _, callback in ipairs(obj.input_callbacks) do
                 callback(data)

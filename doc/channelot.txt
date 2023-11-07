@@ -80,8 +80,17 @@ a running job:
     end
 <
 
-M.terminal()                                                *channelot.terminal*
+ChannelotTerminalOpts                                    *ChannelotTerminalOpts*
+
+    Fields: ~
+        {bufnr?}  (number)  Use the specified buffer instead of the current buffer
+
+
+M.terminal({opts?})                                         *channelot.terminal*
     Convert the current buffer to a |ChannelotTerminal|.
+
+    Parameters: ~
+        {opts?}  (ChannelotTerminalOpts)
 
     Returns: ~
         (ChannelotTerminal)
