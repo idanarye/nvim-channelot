@@ -13,7 +13,7 @@ local ChannelotTerminal = {}
 ---@param opts? ChannelotJobOptions
 ---@return ChannelotJob
 ---@overload fun(command: string|string[]): ChannelotJob
----@overload fun(command: string|string[], opts: table): ChannelotJob
+---@overload fun(command: string|string[], opts: ChannelotJobOptions): ChannelotJob
 function ChannelotTerminal:job(env, command, opts)
     env, command, opts = require'channelot.util'.normalize_job_arguments(env, command, opts)
     local pty = require'channelot.util'.first_non_nil(opts.pty, true)
@@ -110,6 +110,24 @@ end
 function ChannelotTerminal:get_bufnr()
     local chan_info = vim.api.nvim_get_chan_info(self.terminal_id)
     return chan_info.buffer
+end
+
+---@return number[] # A list of window handles that contain the terminal
+function ChannelotTerminal:list_windows()
+    local bufnr = self:get_bufnr()
+    return vim.tbl_filter(function(win)
+        return vim.api.nvim_win_get_buf(win) == bufnr
+    end, vim.api.nvim_list_wins())
+end
+
+---Create a window for the terminal using |channelot.create_window_for_terminal|.
+---
+---This is useful for a |channelot.shadow_terminal| that later needs to be
+---displayed - for example, if an error was encountered.
+function ChannelotTerminal:expose()
+    require'channelot'.create_window_for_terminal {
+        bufnr = self:get_bufnr(),
+    }
 end
 
 ---Close (delete) the buffer used by the terminal.

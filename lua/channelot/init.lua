@@ -83,6 +83,43 @@ local M = {}
 ---<
 ---@brief ]]
 
+---@class ChannelotCreateWindowForTerminalOpts
+---@field bufnr? number Use an existing buffer instead of creating a new one
+
+---Create a new window suitable for running terminal jobs.
+---
+---* When the terminal window is closed, the focus will return (if possible) to
+---  the original window from which this function was invoked.
+---* Automatically goes into insert mode inside the new window.
+---* Does not actually start the terminal.
+---
+---@param opts? ChannelotCreateWindowForTerminalOpts
+function M.create_window_for_terminal(opts)
+    opts = opts or {}
+    local prev_win_id = vim.fn.win_getid(vim.fn.winnr())
+    vim.cmd'botright 20new'
+    local bufnr
+    if opts.bufnr then
+        bufnr = opts.bufnr
+        vim.api.nvim_win_set_buf(0, bufnr)
+    else
+        bufnr = vim.api.nvim_get_current_buf()
+    end
+    vim.api.nvim_create_autocmd('WinEnter', {
+        buffer = bufnr,
+        callback = function()
+            prev_win_id = vim.fn.win_getid(vim.fn.winnr('#'))
+        end,
+    })
+    vim.api.nvim_create_autocmd('WinClosed', {
+        buffer = bufnr,
+        callback = function()
+            vim.fn.win_gotoid(prev_win_id)
+        end,
+    })
+    vim.cmd.startinsert()
+end
+
 ---@class ChannelotTerminalOpts
 ---@field bufnr? number Use the specified buffer instead of the current buffer
 
@@ -107,13 +144,35 @@ function M.terminal(opts)
     return obj
 end
 
+---Similar to |channelot.terminal|, but automatically creates a window with
+---|channelot.create_window_for_terminal| to put the new terminal in.
+---@param opts? ChannelotTerminalOpts
+---@return ChannelotTerminal
+function M.windowed_terminal(opts)
+    opts = opts or {}
+    M.create_window_for_terminal {
+        bufnr = opts.bufnr,
+    }
+    return M.terminal(opts)
+end
+
+---Similar to |channelot.terminal|, but without creating a window.
+---
+---A window can be created later using |ChannelotTerminal:expose|.
+---@return ChannelotTerminal
+function M.shadow_terminal()
+    return M.terminal {
+        bufnr = vim.api.nvim_create_buf(true, false),
+    }
+end
+
 ---Start a job on the current buffer, converting it to a terminal
 ---@param env table<string,any> Environment variables for the command
 ---@param command string|string[] The command as a string or as a list of arguments
 ---@param opts? ChannelotJobOptions
 ---@return ChannelotJob
 ---@overload fun(command: string|string[]): ChannelotJob
----@overload fun(command: string|string[], opts: table): ChannelotJob
+---@overload fun(command: string|string[], opts: ChannelotJobOptions): ChannelotJob
 function M.terminal_job(env, command, opts)
     env, command, opts = require'channelot.util'.normalize_job_arguments(env, command, opts)
     local pty = require'channelot.util'.first_non_nil(opts.pty, true)
@@ -163,6 +222,19 @@ function M.terminal_job(env, command, opts)
     return obj
 end
 
+---Similar to |channelot.terminal_job|, but automatically creates a window with
+---|channelot.create_window_for_terminal| to run the terminal job in.
+---@param env table<string,any> Environment variables for the command
+---@param command string|string[] The command as a string or as a list of arguments
+---@param opts? ChannelotJobOptions
+---@return ChannelotJob
+---@overload fun(command: string|string[]): ChannelotJob
+---@overload fun(command: string|string[], opts: ChannelotJobOptions): ChannelotJob
+function M.windowed_terminal_job(env, command, opts)
+    M.create_window_for_terminal()
+    return M.terminal_job(env, command, opts)
+end
+
 ---Start a job without a terminal attached to it.
 ---
 ---Note: this job will not have a PTY, unless `{ pty = true }` is passed in the `opts`.
@@ -171,7 +243,7 @@ end
 ---@param opts? ChannelotJobOptions
 ---@return ChannelotJob
 ---@overload fun(command: string|string[]): ChannelotJob
----@overload fun(command: string|string[], opts: table): ChannelotJob
+---@overload fun(command: string|string[], opts: ChannelotJobOptions): ChannelotJob
 function M.job(env, command, opts)
     env, command, opts = require'channelot.util'.normalize_job_arguments(env, command, opts)
     local pty = require'channelot.util'.first_non_nil(opts.pty, false)

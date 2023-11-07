@@ -80,6 +80,25 @@ a running job:
     end
 <
 
+ChannelotCreateWindowForTerminalOpts      *ChannelotCreateWindowForTerminalOpts*
+
+    Fields: ~
+        {bufnr?}  (number)  Use an existing buffer instead of creating a new one
+
+
+M.create_window_for_terminal({opts?})     *channelot.create_window_for_terminal*
+    Create a new window suitable for running terminal jobs.
+
+    * When the terminal window is closed, the focus will return (if possible) to
+      the original window from which this function was invoked.
+    * Automatically goes into insert mode inside the new window.
+    * Does not actually start the terminal.
+
+
+    Parameters: ~
+        {opts?}  (ChannelotCreateWindowForTerminalOpts)
+
+
 ChannelotTerminalOpts                                    *ChannelotTerminalOpts*
 
     Fields: ~
@@ -96,6 +115,26 @@ M.terminal({opts?})                                         *channelot.terminal*
         (ChannelotTerminal)
 
 
+M.windowed_terminal({opts?})                       *channelot.windowed_terminal*
+    Similar to |channelot.terminal|, but automatically creates a window with
+    |channelot.create_window_for_terminal| to put the new terminal in.
+
+    Parameters: ~
+        {opts?}  (ChannelotTerminalOpts)
+
+    Returns: ~
+        (ChannelotTerminal)
+
+
+M.shadow_terminal()                                  *channelot.shadow_terminal*
+    Similar to |channelot.terminal|, but without creating a window.
+
+    A window can be created later using |ChannelotTerminal:expose|.
+
+    Returns: ~
+        (ChannelotTerminal)
+
+
                                                         *channelot.terminal_job*
 M.terminal_job({env}, {command}, {opts?})
     Start a job on the current buffer, converting it to a terminal
@@ -107,7 +146,22 @@ M.terminal_job({env}, {command}, {opts?})
 
     Returns: ~
         (ChannelotJob)  @overload fun(command: string|string[]): ChannelotJob
-                        @overload fun(command: string|string[], opts: table): ChannelotJob
+                        @overload fun(command: string|string[], opts: ChannelotJobOptions): ChannelotJob
+
+
+                                               *channelot.windowed_terminal_job*
+M.windowed_terminal_job({env}, {command}, {opts?})
+    Similar to |channelot.terminal_job|, but automatically creates a window with
+    |channelot.create_window_for_terminal| to run the terminal job in.
+
+    Parameters: ~
+        {env}      (table<string,any>)    Environment variables for the command
+        {command}  (string|string[])      The command as a string or as a list of arguments
+        {opts?}    (ChannelotJobOptions)
+
+    Returns: ~
+        (ChannelotJob)  @overload fun(command: string|string[]): ChannelotJob
+                        @overload fun(command: string|string[], opts: ChannelotJobOptions): ChannelotJob
 
 
 M.job({env}, {command}, {opts?})                                 *channelot.job*
@@ -122,7 +176,7 @@ M.job({env}, {command}, {opts?})                                 *channelot.job*
 
     Returns: ~
         (ChannelotJob)  @overload fun(command: string|string[]): ChannelotJob
-                        @overload fun(command: string|string[], opts: table): ChannelotJob
+                        @overload fun(command: string|string[], opts: ChannelotJobOptions): ChannelotJob
 
 
 ChannelotTerminal                                            *ChannelotTerminal*
@@ -142,7 +196,7 @@ ChannelotTerminal:job({env}, {command}, {opts?})
 
     Returns: ~
         (ChannelotJob)  @overload fun(command: string|string[]): ChannelotJob
-                        @overload fun(command: string|string[], opts: table): ChannelotJob
+                        @overload fun(command: string|string[], opts: ChannelotJobOptions): ChannelotJob
 
 
 ChannelotTerminal:raw_write({text})                *ChannelotTerminal:raw_write*
@@ -185,6 +239,19 @@ ChannelotTerminal:get_bufnr()                      *ChannelotTerminal:get_bufnr*
 
     Returns: ~
         (number)   The buffer number used by the terminal.
+
+
+ChannelotTerminal:list_windows()                *ChannelotTerminal:list_windows*
+
+    Returns: ~
+        (number[])   A list of window handles that contain the terminal
+
+
+ChannelotTerminal:expose()                            *ChannelotTerminal:expose*
+    Create a window for the terminal using |channelot.create_window_for_terminal|.
+
+    This is useful for a |channelot.shadow_terminal| that later needs to be
+    displayed - for example, if an error was encountered.
 
 
 ChannelotTerminal:close_buffer()                *ChannelotTerminal:close_buffer*
