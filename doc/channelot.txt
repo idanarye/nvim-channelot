@@ -287,8 +287,17 @@ ChannelotTerminal:with({block})                         *ChannelotTerminal:with*
     as the one job:check()` raises) the exception will be swallowed and the exit
     status will be shown in the terminal's exit prompt.
 
+    If the terminal is now shows in any open window when the block finishes or
+    terminates, it'll be closed silently (though the error will still
+    propagate) - unless there was an `exit_status` error, in which case the
+    terminal will be exposed and the user will be prompted to press a key to
+    close it.
+
     Parameters: ~
         {block}  (fun(terminal:ChannelotTerminal))
+
+    Returns: ~
+        (number|nil)   The exit status of the failed job, or nil if no job failed
 
 
 ChannelotJobOptions                                        *ChannelotJobOptions*

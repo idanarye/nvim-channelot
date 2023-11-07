@@ -171,15 +171,36 @@ end
 ---If the block raises, as an error, a table with an `exit_status` fields (such
 ---as the one job:check()` raises) the exception will be swallowed and the exit
 ---status will be shown in the terminal's exit prompt.
+---
+---If the terminal is now shows in any open window when the block finishes or
+---terminates, it'll be closed silently (though the error will still
+---propagate) - unless there was an `exit_status` error, in which case the
+---terminal will be exposed and the user will be prompted to press a key to
+---close it.
 ---@param block fun(terminal: ChannelotTerminal)
+---@return number|nil # The exit status of the failed job, or nil if no job failed
 function ChannelotTerminal:with(block)
     local ok, err = pcall(block, self)
+
+    local already_exposed = next(self:list_windows()) ~= nil
+
     if ok then
-        self:prompt_exit()
+        if already_exposed then
+            self:prompt_exit()
+        else
+            self:close_buffer()
+        end
     elseif type(err) == 'table' and err.exit_status then
+        if not already_exposed then
+            self:expose()
+        end
         self:prompt_after_process_exited(err.exit_status)
     else
-        self:prompt_exit('[Error occured inside terminal block]')
+        if already_exposed then
+            self:prompt_exit('[Error occured inside terminal block]')
+        else
+            self:close_buffer()
+        end
         error(err)
     end
 end
