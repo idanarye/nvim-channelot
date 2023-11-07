@@ -106,6 +106,17 @@ function ChannelotTerminal:read_key()
     return coroutine.yield()
 end
 
+---@return number # The buffer number used by the terminal.
+function ChannelotTerminal:get_bufnr()
+    local chan_info = vim.api.nvim_get_chan_info(self.terminal_id)
+    return chan_info.buffer
+end
+
+---Close (delete) the buffer used by the terminal.
+function ChannelotTerminal:close_buffer()
+    vim.api.nvim_buf_delete(self:get_bufnr(), {force = true})
+end
+
 ---Prompt the user to press a key and close the terminal.
 ---
 ---When using a job on a |channelot.terminal|, the terminal will not close
@@ -121,14 +132,20 @@ function ChannelotTerminal:prompt_exit(prompt)
         self:raw_write('\r\n' .. prompt)
     end
     local key_pressed = self:read_key()
-    local chan_info = vim.api.nvim_get_chan_info(self.terminal_id)
+    --local chan_info = vim.api.nvim_get_chan_info(self.terminal_id)
     local co = coroutine.running()
     vim.schedule(function()
-        vim.api.nvim_buf_delete(chan_info.buffer, {force = true})
+        self:close_buffer()
         coroutine.resume(co)
     end)
     coroutine.yield()
     return key_pressed
+end
+
+---Helper wrapper around |ChannelotTerminal:prompt_exit| to respond for job failure.
+---@param exit_status number The exit status of the failed job.
+function ChannelotTerminal:prompt_after_process_exited(exit_status)
+    self:prompt_exit('[Process exited ' .. exit_status .. ']')
 end
 
 ---Run a code block (function) with the terminal, and then prompt the user to close it.
@@ -142,7 +159,7 @@ function ChannelotTerminal:with(block)
     if ok then
         self:prompt_exit()
     elseif type(err) == 'table' and err.exit_status then
-        self:prompt_exit('[Process exited ' .. err.exit_status .. ']')
+        self:prompt_after_process_exited(err.exit_status)
     else
         self:prompt_exit('[Error occured inside terminal block]')
         error(err)

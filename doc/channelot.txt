@@ -181,6 +181,16 @@ ChannelotTerminal:read_key()                        *ChannelotTerminal:read_key*
         (string)   the pressed keycode
 
 
+ChannelotTerminal:get_bufnr()                      *ChannelotTerminal:get_bufnr*
+
+    Returns: ~
+        (number)   The buffer number used by the terminal.
+
+
+ChannelotTerminal:close_buffer()                *ChannelotTerminal:close_buffer*
+    Close (delete) the buffer used by the terminal.
+
+
 ChannelotTerminal:prompt_exit({prompt?})         *ChannelotTerminal:prompt_exit*
     Prompt the user to press a key and close the terminal.
 
@@ -193,6 +203,14 @@ ChannelotTerminal:prompt_exit({prompt?})         *ChannelotTerminal:prompt_exit*
 
     Returns: ~
         (string)   the key the user pressed to close the terminal
+
+
+                                 *ChannelotTerminal:prompt_after_process_exited*
+ChannelotTerminal:prompt_after_process_exited({exit_status})
+    Helper wrapper around |ChannelotTerminal:prompt_exit| to respond for job failure.
+
+    Parameters: ~
+        {exit_status}  (number)  The exit status of the failed job.
 
 
 ChannelotTerminal:with({block})                         *ChannelotTerminal:with*
