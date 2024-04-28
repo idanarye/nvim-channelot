@@ -34,7 +34,7 @@ function ChannelotTerminal:job(env, command, opts)
     }, {__index = require'channelot.Job'})
 
     local function on_output(_, data, event)
-        for cbn, callback in pairs(obj.callbacks[event]) do
+        for _, callback in pairs(obj.callbacks[event]) do
             callback(event, data)
         end
         for i, text in pairs(data) do
@@ -48,6 +48,7 @@ function ChannelotTerminal:job(env, command, opts)
     obj.job_id = vim.fn.jobstart(command, {
         env = env;
         pty = pty;
+        cwd = opts.cwd;
         stdout_buffered = false;
         on_stdout = on_output;
         on_stderr = on_output;

@@ -1,5 +1,6 @@
 ---@class ChannelotJobOptions
 ---@field pty? boolean Enforce a PTY or a non-PTY. Leave nil to use default. If false, keyboard input is disabled for the job.
+---@field cwd? string Run the job under a different directory.
 local ChannelotJobOptions
 
 ---An handle to a Neovim job with functions for controlling it from a Lua coroutine.

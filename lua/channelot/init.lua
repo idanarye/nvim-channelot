@@ -209,6 +209,7 @@ function M.terminal_job(env, command, opts)
     obj.job_id = vim.fn.termopen(command, {
         env = env;
         pty = pty;
+        cwd = opts.cwd;
         stdout_buffered = false;
         on_stdout = on_output;
         on_stderr = on_output;
@@ -267,6 +268,7 @@ function M.job(env, command, opts)
     obj.job_id = vim.fn.jobstart(command, {
         env = env;
         pty = pty;
+        cwd = opts.cwd;
         stdout_buffered = false;
         on_stdout = on_output;
         on_stderr = on_output;
