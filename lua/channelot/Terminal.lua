@@ -5,6 +5,7 @@
 ---@see channelot.terminal
 ---@class ChannelotTerminal
 ---@field terminal_id integer
+---@field cwd? string
 local ChannelotTerminal = {}
 
 ---Start a job on a |ChannelotTerminal|.
@@ -15,8 +16,10 @@ local ChannelotTerminal = {}
 ---@overload fun(command: string|string[]): ChannelotJob
 ---@overload fun(command: string|string[], opts: ChannelotJobOptions): ChannelotJob
 function ChannelotTerminal:job(env, command, opts)
-    env, command, opts = require'channelot.util'.normalize_job_arguments(env, command, opts)
-    local pty = require'channelot.util'.first_non_nil(opts.pty, true)
+    local util = require'channelot.util'
+    env, command, opts = util.normalize_job_arguments(env, command, opts)
+    local pty = util.first_non_nil(opts.pty, true)
+    local cwd = util.first_non_nil(opts.cwd, self.cwd)
 
     assert(self.current_job == nil, 'terminal is already running a job')
 
@@ -48,7 +51,7 @@ function ChannelotTerminal:job(env, command, opts)
     obj.job_id = vim.fn.jobstart(command, {
         env = env;
         pty = pty;
-        cwd = opts.cwd;
+        cwd = cwd;
         stdout_buffered = false;
         on_stdout = on_output;
         on_stderr = on_output;

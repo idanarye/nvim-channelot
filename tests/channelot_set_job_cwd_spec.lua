@@ -37,4 +37,12 @@ describe('CWD option', function()
         assert.are.same(read_stdout(term:job('pwd', { cwd = '/' })), '/')
         vim.cmd.close()
     end)
+
+    it('when terminal has a cwd set', function()
+        vim.cmd.new()
+        local term = channelot.terminal{ cwd = '/tmp' }
+        assert.are.same(read_stdout(term:job('pwd')), '/tmp')
+        assert.are.same(read_stdout(term:job('pwd', { cwd = '/' })), '/')
+        vim.cmd.close()
+    end)
 end)

@@ -122,6 +122,7 @@ end
 
 ---@class ChannelotTerminalOpts
 ---@field bufnr? number Use the specified buffer instead of the current buffer
+---@field cwd? string Run jobs ceated in this terminal under a different directory.
 
 ---Convert the current buffer to a |ChannelotTerminal|.
 ---@param opts? ChannelotTerminalOpts
@@ -129,6 +130,7 @@ end
 function M.terminal(opts)
     opts = opts or {}
     local obj = setmetatable({
+        cwd = opts.cwd;
         input_callbacks = {};
     }, {__index = require'channelot.Terminal'})
     obj.terminal_id = vim.api.nvim_open_term(opts.bufnr or 0, {
