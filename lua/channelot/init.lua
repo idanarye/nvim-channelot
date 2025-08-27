@@ -284,4 +284,10 @@ function M.job(env, command, opts)
     return obj
 end
 
+---@param dlg function
+---@return thread
+function M.defer_to_coroutine(dlg, ...)
+    return require'channelot.util'.defer_to_coroutine(dlg, ...)
+end
+
 return M
