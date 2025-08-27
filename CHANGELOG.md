@@ -4,6 +4,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [0.4.0](https://github.com/idanarye/nvim-channelot/compare/v0.3.0...v0.4.0) (2025-08-27)
+
+
+### Features
+
+* Add `cwd` parameter to job options ([c6f23e5](https://github.com/idanarye/nvim-channelot/commit/c6f23e52e0e4a7e9f99a2747a14dc6f5aee05621))
+* Add `cwd` parameter to terminal creation options ([470199a](https://github.com/idanarye/nvim-channelot/commit/470199a971d0ab59c1e9feae7202c95740cbb069))
+* Add `require'channelot'.defer_to_coroutine` ([defb525](https://github.com/idanarye/nvim-channelot/commit/defb52549bbe685e2379517b4107d2eb882ad91a))
+
+
+### Bug Fixes
+
+* `vim.tbl_islist` -&gt; `vim.islist` ([e0464e6](https://github.com/idanarye/nvim-channelot/commit/e0464e626bcc5289ccafc3c315e69f0e27b7144a))
+
 ## [0.3.0](https://github.com/idanarye/nvim-channelot/compare/v0.2.0...v0.3.0) (2023-11-07)
 
 
