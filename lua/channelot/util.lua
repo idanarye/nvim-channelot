@@ -7,7 +7,7 @@ local M = {}
 ---@return string|string[]
 ---@return ChannelotJobOptions
 function M.normalize_job_arguments(env, command, opts)
-    if type(env) == 'string' or (next(env) and vim.tbl_islist(env)) then
+    if type(env) == 'string' or (next(env) and vim.islist(env)) then
         return vim.empty_dict(), env, command or {}
     else
         return env, command, opts or {}
