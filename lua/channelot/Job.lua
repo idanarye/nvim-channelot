@@ -91,8 +91,14 @@ function ChannelotJob:iter(opts)
         handle_data_event_buffered = function(event, data)
             local should_resume = false
             local line_buffer = line_buffers[event]
-            for _, line in ipairs(data) do
-                if vim.endswith(line, '\r') then
+            for i, line in ipairs(data) do
+                if line == '' and data[i +1] == nil and next(line_buffer) ~= nil then
+                    line = table.concat(line_buffer)
+                    line_buffer = {}
+                    line_buffers[event] = line_buffer
+                    write_to_buffer(event, line)
+                    should_resume = true
+                elseif vim.endswith(line, '\r') then
                     if next(line_buffer) ~= nil then
                         table.insert(line_buffer, line)
                         line = table.concat(line_buffer)
@@ -114,13 +120,18 @@ function ChannelotJob:iter(opts)
             local should_resume = false
             local line_buffer = line_buffers[event]
             for i, line in ipairs(data) do
-                if i == 1 and next(line_buffer) ~= nil then
-                    table.insert(line_buffer, line)
+                if line == '' and data[i +1] == nil and next(line_buffer) ~= nil then
                     line = table.concat(line_buffer)
                     line_buffer = {}
                     line_buffers[event] = line_buffer
-
+                    write_to_buffer(event, line)
+                    should_resume = true
+                elseif i == 1 and next(line_buffer) ~= nil then
+                    table.insert(line_buffer, line)
                     if data[i + 1] ~= nil then
+                        line = table.concat(line_buffer)
+                        line_buffer = {}
+                        line_buffers[event] = line_buffer
                         write_to_buffer(event, line)
                         should_resume = true
                     end
@@ -138,12 +149,7 @@ function ChannelotJob:iter(opts)
     end
     local function handle_data_event_unbuffered(event, data)
         local should_resume = false
-        for _, line in ipairs(data) do
-            if line ~= '' then
-                write_to_buffer(event, line)
-                should_resume = true
-            end
-        end
+        write_to_buffer(event, table.concat(data, '\n'))
         if should_resume then
             coroutine.resume(co)
         end
