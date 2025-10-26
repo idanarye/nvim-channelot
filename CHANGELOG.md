@@ -4,6 +4,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [0.5.0](https://github.com/idanarye/nvim-channelot/compare/v0.4.0...v0.5.0) (2025-10-26)
+
+
+### ⚠ BREAKING CHANGES
+
+* channel buffering. `unbuffered` mode will now send the `\n`s
+
+### Bug Fixes
+
+* channel buffering. `unbuffered` mode will now send the `\n`s ([45c5dff](https://github.com/idanarye/nvim-channelot/commit/45c5dff8ce369a4dc6d0c6b512ef20c80e6960bc))
+
 ## [0.4.0](https://github.com/idanarye/nvim-channelot/compare/v0.3.0...v0.4.0) (2025-08-27)
 
 
